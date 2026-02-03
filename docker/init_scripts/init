@@ -219,16 +219,30 @@ start_bin_rq_worker() {
 
 start_bin_watcher() {
 	info_log "Starting watcher"
+
+	# Watchfiles timeout configuration - prevents watcher from being killed during
+	# rapid file changes (e.g., copying large games) when OpenTelemetry initialization
+	# or Redis connections cause startup delays exceeding the default 5s timeout.
+	local sigint_timeout="${WATCHER_SIGINT_TIMEOUT:-30}"
+	local grace_period="${WATCHER_GRACE_PERIOD:-5}"
+	local sigkill_timeout="${WATCHER_SIGKILL_TIMEOUT:-5}"
+
 	if [[ ${OTEL_SDK_DISABLED:-false} == "true" ]]; then
 		# Skip opentelemetry-instrument when OTEL is disabled to ensure
 		# WATCHFILES_CHANGES env var is properly passed to watcher.py
 		watchfiles \
 			--target-type command \
+			--sigint-timeout "${sigint_timeout}" \
+			--grace-period "${grace_period}" \
+			--sigkill-timeout "${sigkill_timeout}" \
 			"python3 watcher.py" \
 			/romm/library &
 	else
 		watchfiles \
 			--target-type command \
+			--sigint-timeout "${sigint_timeout}" \
+			--grace-period "${grace_period}" \
+			--sigkill-timeout "${sigkill_timeout}" \
 			"opentelemetry-instrument --service_name '${OTEL_SERVICE_NAME_PREFIX-}watcher' python3 watcher.py" \
 			/romm/library &
 	fi

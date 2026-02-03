@@ -72,8 +72,12 @@ PYTHONPATH="/app/backend:${PYTHONPATH-}" rq worker \
 	high default low &
 
 echo "Starting watcher..."
+# Extended timeouts to handle rapid file changes during development
 watchfiles \
 	--target-type command \
+	--sigint-timeout "${WATCHER_SIGINT_TIMEOUT:-30}" \
+	--grace-period "${WATCHER_GRACE_PERIOD:-5}" \
+	--sigkill-timeout "${WATCHER_SIGKILL_TIMEOUT:-5}" \
 	'uv run python watcher.py' \
 	/app/romm/library &
 
